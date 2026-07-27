@@ -5,9 +5,10 @@ import com.schoolexam.filter.AuthFilter;
 import com.schoolexam.servlet.*;
 import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.File;
 import java.util.EnumSet;
@@ -22,7 +23,7 @@ public class MainServer {
         }
 
         System.out.println("==========================================================");
-        System.out.println("🏫 Starting School Exam Correction Platform (Jetty Container)");
+        System.out.println("🏫 Starting School Exam Correction Platform (Embedded Jetty)");
         System.out.println("==========================================================");
 
         // Initialize SQLite Database
@@ -30,43 +31,39 @@ public class MainServer {
 
         Server server = new Server(port);
 
-        WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath("/");
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/");
 
-        // Web resource root
         File webappDir = new File("src/main/webapp");
         if (webappDir.exists()) {
-            webapp.setResourceBase(webappDir.getAbsolutePath());
+            context.setResourceBase(webappDir.getAbsolutePath());
         } else {
-            webapp.setResourceBase(".");
+            context.setResourceBase(".");
         }
-
-        // Enable Standard Web Configurations
-        webapp.setConfigurations(new org.eclipse.jetty.webapp.Configuration[] {
-                new org.eclipse.jetty.webapp.WebInfConfiguration(),
-                new org.eclipse.jetty.webapp.WebXmlConfiguration(),
-                new org.eclipse.jetty.webapp.MetaInfConfiguration(),
-                new org.eclipse.jetty.webapp.FragmentConfiguration()
-        });
-
-        // Register Servlets
-        webapp.addServlet(new ServletHolder(new DashboardServlet()), "/");
-        webapp.addServlet(new ServletHolder(new DashboardServlet()), "/dashboard");
-        webapp.addServlet(new ServletHolder(new AuthServlet()), "/login");
-        webapp.addServlet(new ServletHolder(new AuthServlet()), "/logout");
-        webapp.addServlet(new ServletHolder(new AuthServlet()), "/register");
-        webapp.addServlet(new ServletHolder(new AuthServlet()), "/api/auth/*");
-        webapp.addServlet(new ServletHolder(new ExamServlet()), "/api/exams/*");
-        webapp.addServlet(new ServletHolder(new SubmissionServlet()), "/api/submissions/*");
-        webapp.addServlet(new ServletHolder(new EvaluationServlet()), "/api/evaluations/*");
-        webapp.addServlet(new ServletHolder(new EvaluationServlet()), "/report-card/*");
-        webapp.addServlet(new ServletHolder(new LlmConfigServlet()), "/api/llm-configs/*");
 
         // Register Security Filter
         FilterHolder filterHolder = new FilterHolder(new AuthFilter());
-        webapp.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-        server.setHandler(webapp);
+        // Register Servlets
+        context.addServlet(new ServletHolder(new DashboardServlet()), "/");
+        context.addServlet(new ServletHolder(new DashboardServlet()), "/dashboard");
+        context.addServlet(new ServletHolder(new AuthServlet()), "/login");
+        context.addServlet(new ServletHolder(new AuthServlet()), "/logout");
+        context.addServlet(new ServletHolder(new AuthServlet()), "/register");
+        context.addServlet(new ServletHolder(new AuthServlet()), "/api/auth/*");
+        context.addServlet(new ServletHolder(new ExamServlet()), "/api/exams/*");
+        context.addServlet(new ServletHolder(new SubmissionServlet()), "/api/submissions/*");
+        context.addServlet(new ServletHolder(new EvaluationServlet()), "/api/evaluations/*");
+        context.addServlet(new ServletHolder(new EvaluationServlet()), "/report-card/*");
+        context.addServlet(new ServletHolder(new LlmConfigServlet()), "/api/llm-configs/*");
+
+        // Default Servlet for static assets (CSS, JS, images)
+        ServletHolder staticHolder = new ServletHolder("default", DefaultServlet.class);
+        staticHolder.setInitParameter("dirAllowed", "false");
+        context.addServlet(staticHolder, "/static/*");
+
+        server.setHandler(context);
 
         server.start();
         System.out.println("✨ Server successfully started at: http://localhost:" + port);

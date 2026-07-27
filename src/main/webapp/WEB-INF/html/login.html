@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradePulse AI - Teacher Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
+
+    <div class="glass-panel" style="width:100%; max-width:440px; padding:2.5rem; position:relative; overflow:hidden;">
+        <div style="text-align:center; margin-bottom:2rem;">
+            <div class="brand-logo" style="margin:0 auto 1rem auto; width:56px; height:56px; font-size:1.8rem;">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h2 style="font-family:var(--font-heading); font-size:1.75rem; font-weight:700; color:#fff;">GradePulse AI</h2>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0.3rem;">School Exam Correction Platform</p>
+        </div>
+
+        <div id="errorAlert" style="display:none; padding:0.75rem 1rem; background:rgba(244,63,94,0.2); border:1px solid #f43f5e; border-radius:var(--radius-sm); color:#fb7185; font-size:0.85rem; margin-bottom:1.5rem;">
+            Invalid login credentials.
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Teacher Email</label>
+                <input type="email" id="emailInput" class="form-input" placeholder="teacher@school.edu" value="teacher@school.edu" required>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="passwordInput" class="form-input" placeholder="••••••••" value="teacher123" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem; padding:0.85rem;">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In to Portal
+            </button>
+        </form>
+
+        <div style="margin-top:2rem; padding-top:1.25rem; border-top:1px solid var(--border-glass); font-size:0.82rem; color:var(--text-muted); text-align:center;">
+            <strong>Demo Credentials:</strong><br>
+            Email: <code style="color:#6366f1;">teacher@school.edu</code> | Pass: <code style="color:#6366f1;">teacher123</code>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const alertBox = document.getElementById('errorAlert');
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    window.location.href = data.redirect || '/dashboard';
+                } else {
+                    alertBox.style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                alertBox.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

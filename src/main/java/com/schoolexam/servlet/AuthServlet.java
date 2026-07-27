@@ -10,7 +10,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,11 +27,19 @@ public class AuthServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String path = req.getServletPath();
         if ("/login".equals(path)) {
-            req.getRequestDispatcher("/WEB-INF/jsp/login.jsp").forward(req, resp);
+            resp.setContentType("text/html;charset=UTF-8");
+            File htmlFile = new File("src/main/webapp/WEB-INF/html/login.html");
+            if (htmlFile.exists()) {
+                try (InputStream is = new FileInputStream(htmlFile)) {
+                    is.transferTo(resp.getOutputStream());
+                }
+            } else {
+                resp.getWriter().write("<h2>Login Page</h2>");
+            }
         } else if ("/logout".equals(path)) {
             HttpSession session = req.getSession(false);
             if (session != null) session.invalidate();
-            resp.sendRedirect(req.getContextPath() + "/login");
+            resp.sendRedirect("/login");
         } else if ("/api/auth/me".equals(path)) {
             resp.setContentType("application/json");
             HttpSession session = req.getSession(false);
@@ -52,11 +64,13 @@ public class AuthServlet extends HttpServlet {
             String password = req.getParameter("password");
 
             if (email == null || password == null) {
-                Map<String, String> body = objectMapper.readValue(req.getInputStream(), Map.class);
-                if (body != null) {
-                    email = body.get("email");
-                    password = body.get("password");
-                }
+                try {
+                    Map<String, String> body = objectMapper.readValue(req.getInputStream(), Map.class);
+                    if (body != null) {
+                        email = body.get("email");
+                        password = body.get("password");
+                    }
+                } catch (Exception e) {}
             }
 
             User user = authService.authenticate(email, password);
@@ -68,7 +82,7 @@ public class AuthServlet extends HttpServlet {
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("user", user);
-                result.put("redirect", req.getContextPath() + "/dashboard");
+                result.put("redirect", "/dashboard");
                 objectMapper.writeValue(resp.getOutputStream(), result);
             } else {
                 resp.setStatus(401);
