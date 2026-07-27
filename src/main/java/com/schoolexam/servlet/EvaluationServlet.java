@@ -6,6 +6,7 @@ import com.schoolexam.dao.PaperSubmissionDao;
 import com.schoolexam.model.EvaluationResult;
 import com.schoolexam.model.PaperSubmission;
 import com.schoolexam.service.LlmEvaluationService;
+import com.schoolexam.view.ReportCardView;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -39,15 +40,15 @@ public class EvaluationServlet extends HttpServlet {
             return;
         }
 
-        if (URI.startsWith(req.getContextPath() + "/report-card/")) {
+        if (URI.startsWith(req.getContextPath() + "/report-card/") || URI.contains("/report-card/")) {
             String[] parts = URI.split("/");
             Long submissionId = Long.parseLong(parts[parts.length - 1]);
             PaperSubmission sub = paperSubmissionDao.findById(submissionId);
             EvaluationResult eval = evaluationResultDao.findBySubmissionId(submissionId);
 
-            req.setAttribute("submission", sub);
-            req.setAttribute("evaluation", eval);
-            req.getRequestDispatcher("/WEB-INF/jsp/report-card.jsp").forward(req, resp);
+            resp.setContentType("text/html;charset=UTF-8");
+            String html = ReportCardView.render(sub, eval);
+            resp.getWriter().write(html);
             return;
         }
 

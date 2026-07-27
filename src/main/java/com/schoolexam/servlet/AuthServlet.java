@@ -3,6 +3,7 @@ package com.schoolexam.servlet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schoolexam.model.User;
 import com.schoolexam.service.AuthService;
+import com.schoolexam.view.LoginView;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -10,11 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,14 +25,8 @@ public class AuthServlet extends HttpServlet {
         String path = req.getServletPath();
         if ("/login".equals(path)) {
             resp.setContentType("text/html;charset=UTF-8");
-            File htmlFile = new File("src/main/webapp/WEB-INF/html/login.html");
-            if (htmlFile.exists()) {
-                try (InputStream is = new FileInputStream(htmlFile)) {
-                    is.transferTo(resp.getOutputStream());
-                }
-            } else {
-                resp.getWriter().write("<h2>Login Page</h2>");
-            }
+            String html = LoginView.render(req.getContextPath(), null);
+            resp.getWriter().write(html);
         } else if ("/logout".equals(path)) {
             HttpSession session = req.getSession(false);
             if (session != null) session.invalidate();

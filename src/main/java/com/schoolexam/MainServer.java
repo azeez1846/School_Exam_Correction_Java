@@ -16,14 +16,14 @@ import java.util.EnumSet;
 public class MainServer {
 
     public static void main(String[] args) throws Exception {
-        int port = 8080;
+        int port = 8083; // Port updated to 8083 as requested
         String portProp = System.getProperty("server.port");
         if (portProp != null && !portProp.isEmpty()) {
             port = Integer.parseInt(portProp);
         }
 
         System.out.println("==========================================================");
-        System.out.println("🏫 Starting School Exam Correction Platform (Embedded Jetty)");
+        System.out.println("🏫 Starting School Exam Correction Platform (Pure Java UI)");
         System.out.println("==========================================================");
 
         // Initialize SQLite Database
@@ -58,7 +58,7 @@ public class MainServer {
         context.addServlet(new ServletHolder(new EvaluationServlet()), "/report-card/*");
         context.addServlet(new ServletHolder(new LlmConfigServlet()), "/api/llm-configs/*");
 
-        // Default Servlet for static assets (CSS, JS, images)
+        // Default Servlet for static assets (CSS, JS)
         ServletHolder staticHolder = new ServletHolder("default", DefaultServlet.class);
         staticHolder.setInitParameter("dirAllowed", "false");
         context.addServlet(staticHolder, "/static/*");
