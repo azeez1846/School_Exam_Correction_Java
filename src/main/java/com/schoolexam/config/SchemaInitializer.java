@@ -61,8 +61,14 @@ public class SchemaInitializer {
                     "evaluated_by_model TEXT, " +
                     "is_teacher_overridden INTEGER DEFAULT 0, " +
                     "teacher_notes TEXT, " +
+                    "annotations_json TEXT, " +
+                    "audio_feedback_path TEXT, " +
                     "evaluated_at DATETIME DEFAULT CURRENT_TIMESTAMP, " +
                     "FOREIGN KEY(submission_id) REFERENCES paper_submissions(id) ON DELETE CASCADE)");
+
+            // Migration for existing tables
+            try { stmt.execute("ALTER TABLE evaluation_results ADD COLUMN annotations_json TEXT"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE evaluation_results ADD COLUMN audio_feedback_path TEXT"); } catch (Exception ignored) {}
 
             // 5. LLM Configs table
             stmt.execute("CREATE TABLE IF NOT EXISTS llm_configs (" +

@@ -45,7 +45,7 @@ public class EvaluationResultDao {
     public EvaluationResult saveOrUpdate(EvaluationResult eval) {
         EvaluationResult existing = findBySubmissionId(eval.getSubmissionId());
         if (existing == null) {
-            String sql = "INSERT INTO evaluation_results (submission_id, total_marks_obtained, max_marks, percentage_score, letter_grade, rubric_breakdown_json, strengths_json, improvement_areas_json, custom_teacher_feedback, evaluated_by_model, is_teacher_overridden, teacher_notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO evaluation_results (submission_id, total_marks_obtained, max_marks, percentage_score, letter_grade, rubric_breakdown_json, strengths_json, improvement_areas_json, custom_teacher_feedback, evaluated_by_model, is_teacher_overridden, teacher_notes, annotations_json, audio_feedback_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (Connection conn = DatabaseConfig.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setLong(1, eval.getSubmissionId());
@@ -60,6 +60,8 @@ public class EvaluationResultDao {
                 ps.setString(10, eval.getEvaluatedByModel());
                 ps.setInt(11, Boolean.TRUE.equals(eval.getIsTeacherOverridden()) ? 1 : 0);
                 ps.setString(12, eval.getTeacherNotes());
+                ps.setString(13, eval.getAnnotationsJson());
+                ps.setString(14, eval.getAudioFeedbackPath());
                 ps.executeUpdate();
 
                 ResultSet rs = ps.getGeneratedKeys();
@@ -71,7 +73,7 @@ public class EvaluationResultDao {
                 e.printStackTrace();
             }
         } else {
-            String sql = "UPDATE evaluation_results SET total_marks_obtained = ?, max_marks = ?, percentage_score = ?, letter_grade = ?, rubric_breakdown_json = ?, strengths_json = ?, improvement_areas_json = ?, custom_teacher_feedback = ?, evaluated_by_model = ?, is_teacher_overridden = ?, teacher_notes = ?, evaluated_at = CURRENT_TIMESTAMP WHERE submission_id = ?";
+            String sql = "UPDATE evaluation_results SET total_marks_obtained = ?, max_marks = ?, percentage_score = ?, letter_grade = ?, rubric_breakdown_json = ?, strengths_json = ?, improvement_areas_json = ?, custom_teacher_feedback = ?, evaluated_by_model = ?, is_teacher_overridden = ?, teacher_notes = ?, annotations_json = ?, audio_feedback_path = ?, evaluated_at = CURRENT_TIMESTAMP WHERE submission_id = ?";
             try (Connection conn = DatabaseConfig.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setDouble(1, eval.getTotalMarksObtained() != null ? eval.getTotalMarksObtained() : 0.0);
@@ -85,7 +87,9 @@ public class EvaluationResultDao {
                 ps.setString(9, eval.getEvaluatedByModel());
                 ps.setInt(10, Boolean.TRUE.equals(eval.getIsTeacherOverridden()) ? 1 : 0);
                 ps.setString(11, eval.getTeacherNotes());
-                ps.setLong(12, eval.getSubmissionId());
+                ps.setString(12, eval.getAnnotationsJson());
+                ps.setString(13, eval.getAudioFeedbackPath());
+                ps.setLong(14, eval.getSubmissionId());
                 ps.executeUpdate();
                 eval.setId(existing.getId());
                 return eval;
@@ -111,6 +115,8 @@ public class EvaluationResultDao {
         eval.setEvaluatedByModel(rs.getString("evaluated_by_model"));
         eval.setIsTeacherOverridden(rs.getInt("is_teacher_overridden") == 1);
         eval.setTeacherNotes(rs.getString("teacher_notes"));
+        try { eval.setAnnotationsJson(rs.getString("annotations_json")); } catch (Exception ignored) {}
+        try { eval.setAudioFeedbackPath(rs.getString("audio_feedback_path")); } catch (Exception ignored) {}
         return eval;
     }
 }

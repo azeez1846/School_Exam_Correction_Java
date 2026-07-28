@@ -49,8 +49,11 @@
                         <label>Active Assessment</label>
                         <select id="examSelect" class="form-select"></select>
                     </div>
-                    <button class="btn btn-sm btn-outline" style="width:100%;" onclick="exportCsv()">
+                    <button class="btn btn-sm btn-outline" style="width:100%; margin-bottom:0.5rem;" onclick="exportCsv()">
                         <i class="fa-solid fa-file-csv"></i> Download CSV Gradebook
+                    </button>
+                    <button class="btn btn-sm btn-secondary" style="width:100%; color:#a855f7;" onclick="openRubricModal()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Rubric Assistant
                     </button>
                 </div>
 
@@ -72,9 +75,12 @@
                 <div class="glass-panel" style="padding:1.75rem;">
                     
                     <div class="tabs-header">
-                        <button class="tab-btn active" onclick="switchTab('single')"><i class="fa-solid fa-file-arrow-up"></i> Single Paper Correction</button>
-                        <button class="tab-btn" onclick="switchTab('bulk')"><i class="fa-solid fa-folder-tree"></i> Bulk Upload Scanner</button>
-                        <button class="tab-btn" onclick="switchTab('history')"><i class="fa-solid fa-list-check"></i> Submissions Gradebook</button>
+                        <button class="tab-btn active" onclick="switchTab('single')"><i class="fa-solid fa-file-arrow-up"></i> Single Paper</button>
+                        <button class="tab-btn" onclick="switchTab('split')"><i class="fa-solid fa-scissors"></i> Auto-Split PDF</button>
+                        <button class="tab-btn" onclick="switchTab('bulk')"><i class="fa-solid fa-file-zipper"></i> Bulk ZIP</button>
+                        <button class="tab-btn" onclick="switchTab('diagnostic')"><i class="fa-solid fa-chart-pie"></i> Diagnostic AI</button>
+                        <button class="tab-btn" onclick="switchTab('plagiarism')"><i class="fa-solid fa-shield-halved"></i> Plagiarism Audit</button>
+                        <button class="tab-btn" onclick="switchTab('history')"><i class="fa-solid fa-list-check"></i> Gradebook</button>
                     </div>
 
                     <!-- Single Upload View -->
@@ -115,6 +121,25 @@
                         </div>
                     </div>
 
+                    <!-- Multi-Student Single PDF Auto-Splitter View -->
+                    <div id="tabSplit" class="tab-content" style="display:none;">
+                        <form id="splitUploadForm">
+                            <div class="dropzone" onclick="document.getElementById('splitFileInput').click()">
+                                <div class="dropzone-icon">
+                                    <i class="fa-solid fa-scissors" style="color:#6366f1;"></i>
+                                </div>
+                                <h4>Upload Multi-Student Merged PDF Document</h4>
+                                <p>Auto-detects page boundaries, splits pages per student, extracts Roll Nos, and creates submissions.</p>
+                                <input type="file" id="splitFileInput" name="multiStudentPdf" accept=".pdf" style="display:none;" onchange="updateSplitFileName(this)">
+                                <div id="selectedSplitFileName" style="margin-top:0.75rem; font-weight:600; color:#6366f1;"></div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1.5rem;">
+                                <i class="fa-solid fa-scissors"></i> Split PDF & Batch Process All Students
+                            </button>
+                        </form>
+                    </div>
+
                     <!-- Bulk Upload View -->
                     <div id="tabBulk" class="tab-content" style="display:none;">
                         <form id="bulkUploadForm">
@@ -134,14 +159,106 @@
                         </form>
                     </div>
 
+                    <!-- Diagnostic AI Insights View -->
+                    <div id="tabDiagnostic" class="tab-content" style="display:none;">
+                        <h3 style="font-family:var(--font-heading); margin-bottom:1rem; color:#fff;"><i class="fa-solid fa-lightbulb" style="color:#fbbf24;"></i> AI Diagnostic Misconceptions & Remediation</h3>
+                        <div id="diagnosticContent"></div>
+                    </div>
+
+                    <!-- Plagiarism Audit View -->
+                    <div id="tabPlagiarism" class="tab-content" style="display:none;">
+                        <h3 style="font-family:var(--font-heading); margin-bottom:1rem; color:#fff;"><i class="fa-solid fa-shield-cat" style="color:#f43f5e;"></i> Peer Similarity & Copying Audit</h3>
+                        <div id="plagiarismContent"></div>
+                    </div>
+
                     <!-- History View -->
                     <div id="tabHistory" class="tab-content" style="display:none;">
-                        <h3 style="font-family:var(--font-heading); margin-bottom:1rem;">Evaluated Submissions</h3>
+                        <h3 style="font-family:var(--font-heading); margin-bottom:1rem; color:#fff;">Evaluated Submissions Gradebook</h3>
                         <div id="submissionsList"></div>
                     </div>
 
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Canvas Annotation & Voice Feedback Studio Modal -->
+    <div id="annotationModal" class="modal-overlay">
+        <div class="glass-panel modal-content" style="max-width:900px; width:90%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="font-family:var(--font-heading); color:#fff;"><i class="fa-solid fa-paintbrush" style="color:#6366f1;"></i> Split-Screen Paper Annotation & Audio Studio</h3>
+                <button class="btn btn-sm btn-secondary" onclick="closeAnnotationModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <!-- Left: Canvas overlay paper preview -->
+                <div style="background:#0f172a; padding:0.5rem; border-radius:var(--radius-md); text-align:center;">
+                    <div style="margin-bottom:0.5rem; display:flex; gap:0.5rem; justify-content:center;">
+                        <button class="btn btn-sm btn-secondary" onclick="setDrawTool('tick')">✓ Tick</button>
+                        <button class="btn btn-sm btn-secondary" onclick="setDrawTool('cross')">✗ Cross</button>
+                        <button class="btn btn-sm btn-secondary" onclick="setDrawTool('pen')">✏ Pen</button>
+                        <button class="btn btn-sm btn-secondary" onclick="clearCanvas()">Clear Canvas</button>
+                    </div>
+                    <canvas id="annotationCanvas" width="380" height="460" style="border:1px dashed #475569; background:#ffffff; border-radius:4px; cursor:crosshair;"></canvas>
+                </div>
+
+                <!-- Right: Voice note recorder & saved feedback -->
+                <div style="display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                        <h4 style="color:#e2e8f0; margin-bottom:0.75rem;"><i class="fa-solid fa-microphone" style="color:#34d399;"></i> Teacher Voice Note Feedback</h4>
+                        <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem;">Record voice audio notes to send directly to students & parents.</p>
+                        <div style="display:flex; gap:0.75rem; margin-bottom:1rem;">
+                            <button id="recordAudioBtn" class="btn btn-sm btn-primary" onclick="toggleAudioRecording()"><i class="fa-solid fa-circle"></i> Start Recording</button>
+                            <span id="recordingStatus" style="font-size:0.85rem; color:#fbbf24; align-self:center;"></span>
+                        </div>
+                        <audio id="audioPreviewPlayer" controls style="width:100%; display:none; margin-bottom:1rem;"></audio>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1rem;">
+                        <button class="btn btn-secondary" onclick="closeAnnotationModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveAnnotationsAndAudio()"><i class="fa-solid fa-floppy-disk"></i> Save Annotations & Audio</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Rubric Assistant Modal -->
+    <div id="rubricModal" class="modal-overlay">
+        <div class="glass-panel modal-content" style="max-width:600px; width:90%;">
+            <h3 style="font-family:var(--font-heading); margin-bottom:1rem; color:#fff;"><i class="fa-solid fa-wand-magic-sparkles" style="color:#a855f7;"></i> AI Rubric Assistant</h3>
+            <div class="form-group">
+                <label>Question Text</label>
+                <textarea id="rubricQuestionInput" class="form-input" rows="2" placeholder="e.g. Derive kinetic energy formula and explain units..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Model Answer / Key</label>
+                <textarea id="rubricModelAnswerInput" class="form-input" rows="3" placeholder="e.g. KE = 0.5 * m * v^2..."></textarea>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="generateAiRubric()" style="width:100%; margin-bottom:1rem;"><i class="fa-solid fa-robot"></i> Generate Rubric JSON</button>
+            <div class="form-group">
+                <label>Generated Rubric JSON</label>
+                <textarea id="rubricResultJson" class="form-input" rows="4" readonly></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1rem;">
+                <button class="btn btn-secondary" onclick="closeRubricModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div id="emailModal" class="modal-overlay">
+        <div class="glass-panel modal-content">
+            <h3 style="font-family:var(--font-heading); margin-bottom:1rem; color:#fff;"><i class="fa-solid fa-envelope" style="color:#38bdf8;"></i> Send Report Card to Parent/Student</h3>
+            <input type="hidden" id="emailSubId">
+            <div class="form-group">
+                <label>Recipient Email Address</label>
+                <input type="email" id="recipientEmailInput" class="form-input" placeholder="parent@school.edu">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="dispatchReportEmail()">Send Email</button>
+            </div>
         </div>
     </div>
 
@@ -196,12 +313,20 @@
             
             if (tab === 'single') {
                 document.getElementById('tabSingle').style.display = 'block';
-                event.target.classList.add('active');
+            } else if (tab === 'split') {
+                document.getElementById('tabSplit').style.display = 'block';
             } else if (tab === 'bulk') {
                 document.getElementById('tabBulk').style.display = 'block';
-                event.target.classList.add('active');
+            } else if (tab === 'diagnostic') {
+                document.getElementById('tabDiagnostic').style.display = 'block';
+                loadDiagnosticInsights();
+            } else if (tab === 'plagiarism') {
+                document.getElementById('tabPlagiarism').style.display = 'block';
+                loadPlagiarismAudit();
             } else if (tab === 'history') {
                 document.getElementById('tabHistory').style.display = 'block';
+            }
+            if (event && event.target) {
                 event.target.classList.add('active');
             }
         }
@@ -209,6 +334,12 @@
         function updateFileName(input) {
             if (input.files.length > 0) {
                 document.getElementById('selectedFileName').textContent = "Selected: " + input.files[0].name;
+            }
+        }
+
+        function updateSplitFileName(input) {
+            if (input.files.length > 0) {
+                document.getElementById('selectedSplitFileName').textContent = "Selected: " + input.files[0].name;
             }
         }
 

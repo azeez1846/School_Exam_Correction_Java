@@ -16,10 +16,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(urlPatterns = {"/api/exams", "/api/exams/*"})
+import com.schoolexam.service.LlmEvaluationService;
+
+@WebServlet(urlPatterns = {"/api/exams", "/api/exams/*", "/api/exam/generate-rubric"})
 public class ExamServlet extends HttpServlet {
     private final ExamDao examDao = new ExamDao();
     private final AnalyticsService analyticsService = new AnalyticsService();
+    private final LlmEvaluationService llmEvaluationService = new LlmEvaluationService();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -50,6 +53,21 @@ public class ExamServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json");
+        String URI = req.getRequestURI();
+
+        if (URI.contains("/generate-rubric")) {
+            Map<String, Object> body = objectMapper.readValue(req.getInputStream(), Map.class);
+            String title = body.get("title") != null ? body.get("title").toString() : "Assessment";
+            String subject = body.get("subject") != null ? body.get("subject").toString() : "Science";
+            String question = body.get("questionText") != null ? body.get("questionText").toString() : "";
+            String modelAnswer = body.get("modelAnswer") != null ? body.get("modelAnswer").toString() : "";
+
+            String rubricJson = llmEvaluationService.generateRubricFromModelAnswer(title, subject, question, modelAnswer);
+            Map<String, String> res = Map.of("markingRubricJson", rubricJson);
+            objectMapper.writeValue(resp.getOutputStream(), res);
+            return;
+        }
+
         HttpSession session = req.getSession(false);
         User user = session != null ? (User) session.getAttribute("user") : null;
 

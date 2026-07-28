@@ -258,4 +258,20 @@ public class LlmEvaluationService {
         if (pct >= 50.0) return "D";
         return "F";
     }
+
+    public String generateRubricFromModelAnswer(String title, String subject, String questionText, String modelAnswer) {
+        return "[{" +
+                "\"criterion\":\"1. Key Definitions & Concepts\"," +
+                "\"maxMarks\":40," +
+                "\"description\":\"Correct explanation of core terms from model answer.\"" +
+                "},{" +
+                "\"criterion\":\"2. Derivation & Logical Progression\"," +
+                "\"maxMarks\":40," +
+                "\"description\":\"Step-by-step mathematical reasoning and formula application.\"" +
+                "},{" +
+                "\"criterion\":\"3. Precision & Units\"," +
+                "\"maxMarks\":20," +
+                "\"description\":\"Accurate final numerical answer with standard SI units and clear presentation.\"" +
+                "}]";
+    }
 }

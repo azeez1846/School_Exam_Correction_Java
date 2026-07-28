@@ -25,7 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(urlPatterns = {"/api/submissions", "/api/submissions/upload", "/api/submissions/bulk"})
+import com.schoolexam.service.PdfSplitterService;
+import com.schoolexam.service.ReportCardExporterService;
+import com.schoolexam.service.EmailNotificationService;
+
+@WebServlet(urlPatterns = {"/api/submissions", "/api/submissions/upload", "/api/submissions/bulk", "/api/submissions/split-upload", "/api/submissions/download-pdf-report", "/api/submissions/send-email"})
 @MultipartConfig(fileSizeThreshold = 1024 * 1024 * 2, maxFileSize = 1024 * 1024 * 50, maxRequestSize = 1024 * 1024 * 100)
 public class SubmissionServlet extends HttpServlet {
 
@@ -33,10 +37,32 @@ public class SubmissionServlet extends HttpServlet {
     private final OcrService ocrService = new OcrService();
     private final LlmEvaluationService llmEvaluationService = new LlmEvaluationService();
     private final BulkProcessingService bulkProcessingService = new BulkProcessingService();
+    private final PdfSplitterService pdfSplitterService = new PdfSplitterService();
+    private final ReportCardExporterService reportCardExporterService = new ReportCardExporterService();
+    private final EmailNotificationService emailNotificationService = new EmailNotificationService();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String path = req.getServletPath();
+
+        if ("/api/submissions/download-pdf-report".equals(path)) {
+            String subIdStr = req.getParameter("submissionId");
+            if (subIdStr != null) {
+                try {
+                    Long submissionId = Long.parseLong(subIdStr);
+                    byte[] pdfBytes = reportCardExporterService.generatePdfReportCard(submissionId);
+                    resp.setContentType("application/pdf");
+                    resp.setHeader("Content-Disposition", "attachment; filename=\"report_card_sub_" + submissionId + ".pdf\"");
+                    resp.setContentLength(pdfBytes.length);
+                    resp.getOutputStream().write(pdfBytes);
+                    return;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
         resp.setContentType("application/json");
         String examIdStr = req.getParameter("examId");
 
@@ -61,6 +87,38 @@ public class SubmissionServlet extends HttpServlet {
         }
         File uploadDirFile = new File(uploadDir);
         if (!uploadDirFile.exists()) uploadDirFile.mkdirs();
+
+        if ("/api/submissions/send-email".equals(path)) {
+            Map<String, Object> body = objectMapper.readValue(req.getInputStream(), Map.class);
+            Long submissionId = Long.parseLong(body.get("submissionId").toString());
+            String email = body.get("email") != null ? body.get("email").toString() : null;
+
+            boolean success = emailNotificationService.sendReportCardEmail(submissionId, email);
+            Map<String, Object> res = Map.of("success", success, "message", "Email notification queued & sent successfully.");
+            objectMapper.writeValue(resp.getOutputStream(), res);
+            return;
+        }
+
+        if ("/api/submissions/split-upload".equals(path)) {
+            String examIdStr = req.getParameter("examId");
+            Part pdfPart = req.getPart("multiStudentPdf");
+
+            if (pdfPart == null || examIdStr == null) {
+                resp.setStatus(400);
+                resp.getWriter().write("{\"error\":\"Multi-student PDF file and examId are required\"}");
+                return;
+            }
+
+            Long examId = Long.parseLong(examIdStr);
+            File multiPdfFile = new File(uploadDirFile, "multi_student_" + System.currentTimeMillis() + ".pdf");
+            try (InputStream input = pdfPart.getInputStream()) {
+                Files.copy(input, multiPdfFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            List<PaperSubmission> splits = pdfSplitterService.splitAndProcessMultiStudentPdf(multiPdfFile, examId, uploadDirFile.getAbsolutePath(), true);
+            objectMapper.writeValue(resp.getOutputStream(), splits);
+            return;
+        }
 
         if ("/api/submissions/upload".equals(path)) {
             // Single paper upload

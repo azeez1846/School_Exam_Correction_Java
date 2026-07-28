@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(urlPatterns = {"/api/evaluations", "/api/evaluations/*", "/api/evaluations/export/csv/*", "/report-card/*"})
+@WebServlet(urlPatterns = {"/api/evaluations", "/api/evaluations/*", "/api/evaluations/export/csv/*", "/report-card/*", "/api/evaluations/annotation", "/api/evaluations/audio"})
 public class EvaluationServlet extends HttpServlet {
 
     private final EvaluationResultDao evaluationResultDao = new EvaluationResultDao();
@@ -73,9 +73,37 @@ public class EvaluationServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json");
-        String path = req.getServletPath();
+        String URI = req.getRequestURI();
 
-        if ("/api/evaluations/override".equals(path) || req.getRequestURI().contains("/override")) {
+        if (URI.contains("/annotation")) {
+            Map<String, Object> body = objectMapper.readValue(req.getInputStream(), Map.class);
+            Long submissionId = Long.parseLong(body.get("submissionId").toString());
+            String annotationsJson = body.get("annotationsJson") != null ? body.get("annotationsJson").toString() : "[]";
+
+            EvaluationResult eval = evaluationResultDao.findBySubmissionId(submissionId);
+            if (eval != null) {
+                eval.setAnnotationsJson(annotationsJson);
+                eval = evaluationResultDao.saveOrUpdate(eval);
+            }
+            objectMapper.writeValue(resp.getOutputStream(), eval);
+            return;
+        }
+
+        if (URI.contains("/audio")) {
+            Map<String, Object> body = objectMapper.readValue(req.getInputStream(), Map.class);
+            Long submissionId = Long.parseLong(body.get("submissionId").toString());
+            String audioPath = body.get("audioFeedbackPath") != null ? body.get("audioFeedbackPath").toString() : "";
+
+            EvaluationResult eval = evaluationResultDao.findBySubmissionId(submissionId);
+            if (eval != null) {
+                eval.setAudioFeedbackPath(audioPath);
+                eval = evaluationResultDao.saveOrUpdate(eval);
+            }
+            objectMapper.writeValue(resp.getOutputStream(), eval);
+            return;
+        }
+
+        if (URI.contains("/override")) {
             Map<String, Object> body = objectMapper.readValue(req.getInputStream(), Map.class);
             Long submissionId = Long.parseLong(body.get("submissionId").toString());
             double newScore = Double.parseDouble(body.get("totalMarksObtained").toString());

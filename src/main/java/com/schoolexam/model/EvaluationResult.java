@@ -16,6 +16,8 @@ public class EvaluationResult {
     private String evaluatedByModel;
     private Boolean isTeacherOverridden;
     private String teacherNotes;
+    private String annotationsJson;
+    private String audioFeedbackPath;
     private LocalDateTime evaluatedAt;
 
     public EvaluationResult() {}
@@ -75,6 +77,12 @@ public class EvaluationResult {
 
     public String getTeacherNotes() { return teacherNotes; }
     public void setTeacherNotes(String teacherNotes) { this.teacherNotes = teacherNotes; }
+
+    public String getAnnotationsJson() { return annotationsJson; }
+    public void setAnnotationsJson(String annotationsJson) { this.annotationsJson = annotationsJson; }
+
+    public String getAudioFeedbackPath() { return audioFeedbackPath; }
+    public void setAudioFeedbackPath(String audioFeedbackPath) { this.audioFeedbackPath = audioFeedbackPath; }
 
     public LocalDateTime getEvaluatedAt() { return evaluatedAt; }
     public void setEvaluatedAt(LocalDateTime evaluatedAt) { this.evaluatedAt = evaluatedAt; }
