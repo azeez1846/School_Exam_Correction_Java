@@ -14,9 +14,7 @@ import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schoolexam.service.AnalyticsService;
 
-import java.io.IOException;
 import java.util.Map;
-import java.util.List;
 
 @WebServlet(urlPatterns = {"/", "/dashboard", "/api/analytics/diagnostic", "/api/analytics/plagiarism"})
 public class DashboardServlet extends HttpServlet {

@@ -98,23 +98,23 @@ async function viewSubmissionDetails(submissionId) {
     try {
         const res = await fetch(`/api/evaluations?submissionId=${submissionId}`);
         if (res.ok) {
-            const eval = await res.json();
-            currentEvaluation = eval;
-            renderEvaluationScorecard(eval);
+            const evalData = await res.json();
+            currentEvaluation = evalData;
+            renderEvaluationScorecard(evalData);
         }
     } catch (e) {
         console.error('Failed to load evaluation', e);
     }
 }
 
-function renderEvaluationScorecard(eval) {
+function renderEvaluationScorecard(evalData) {
     const card = document.getElementById('scorecardDisplay');
-    if (!card || !eval) return;
+    if (!card || !evalData) return;
 
-    const gradeClass = `grade-${eval.letterGrade.replace('+', '-plus')}`;
+    const gradeClass = `grade-${evalData.letterGrade.replace('+', '-plus')}`;
     let rubricRows = '';
     try {
-        const rubrics = JSON.parse(eval.rubricBreakdownJson || '[]');
+        const rubrics = JSON.parse(evalData.rubricBreakdownJson || '[]');
         rubricRows = rubrics.map(r => `
             <tr>
                 <td><strong>${r.criterion}</strong></td>
@@ -127,25 +127,25 @@ function renderEvaluationScorecard(eval) {
 
     let strengthsList = '';
     try {
-        const strArr = JSON.parse(eval.strengthsJson || '[]');
+        const strArr = JSON.parse(evalData.strengthsJson || '[]');
         strengthsList = strArr.map(s => `<li>${s}</li>`).join('');
     } catch (e) {}
 
     let improvementsList = '';
     try {
-        const impArr = JSON.parse(eval.improvementAreasJson || '[]');
+        const impArr = JSON.parse(evalData.improvementAreasJson || '[]');
         improvementsList = impArr.map(i => `<li>${i}</li>`).join('');
     } catch (e) {}
 
     card.innerHTML = `
         <div class="scorecard-header">
             <div class="student-info">
-                <h2>Evaluation Scorecard ${eval.isTeacherOverridden ? '<span style="font-size:0.75rem; color:#fbbf24; background:rgba(245,158,11,0.2); padding:0.2rem 0.6rem; border-radius:12px;">MANUALLY OVERRIDDEN</span>' : ''}</h2>
-                <p>Model: <strong>${eval.evaluatedByModel}</strong> | Submission #${eval.submissionId}</p>
+                <h2>Evaluation Scorecard ${evalData.isTeacherOverridden ? '<span style="font-size:0.75rem; color:#fbbf24; background:rgba(245,158,11,0.2); padding:0.2rem 0.6rem; border-radius:12px;">MANUALLY OVERRIDDEN</span>' : ''}</h2>
+                <p>Model: <strong>${evalData.evaluatedByModel}</strong> | Submission #${evalData.submissionId}</p>
             </div>
             <div class="grade-badge ${gradeClass}">
-                ${eval.letterGrade}
-                <span style="font-size:1rem; opacity:0.8;">(${eval.totalMarksObtained}/${eval.maxMarks})</span>
+                ${evalData.letterGrade}
+                <span style="font-size:1rem; opacity:0.8;">(${evalData.totalMarksObtained}/${evalData.maxMarks})</span>
             </div>
         </div>
 
@@ -178,14 +178,14 @@ function renderEvaluationScorecard(eval) {
 
             <div style="margin-top:1.5rem; padding:1.25rem; background:rgba(15,23,42,0.6); border-radius:var(--radius-md); border:1px solid var(--border-glass);">
                 <h5 style="color:#6366f1; margin-bottom:0.5rem;">Custom Evaluator Feedback</h5>
-                <p style="font-size:0.9rem; color:#e2e8f0; line-height:1.5;">${eval.customTeacherFeedback || 'Good performance.'}</p>
+                <p style="font-size:0.9rem; color:#e2e8f0; line-height:1.5;">${evalData.customTeacherFeedback || 'Good performance.'}</p>
             </div>
 
             <div style="margin-top:1.5rem; display:flex; flex-wrap:wrap; gap:0.75rem;">
-                <button class="btn btn-primary" onclick="openAnnotationModal(${eval.submissionId})"><i class="fa-solid fa-paintbrush"></i> Annotation & Voice Studio</button>
-                <button class="btn btn-secondary" onclick="openOverrideModal(${eval.submissionId}, ${eval.totalMarksObtained})"><i class="fa-solid fa-pen-to-square"></i> Override Marks</button>
-                <a href="/api/submissions/download-pdf-report?submissionId=${eval.submissionId}" target="_blank" class="btn btn-outline"><i class="fa-solid fa-file-pdf" style="color:#f43f5e;"></i> Download Official PDF</a>
-                <button class="btn btn-secondary" onclick="openEmailModal(${eval.submissionId})"><i class="fa-solid fa-paper-plane" style="color:#38bdf8;"></i> Email Parent/Student</button>
+                <button class="btn btn-primary" onclick="openAnnotationModal(${evalData.submissionId})"><i class="fa-solid fa-paintbrush"></i> Annotation & Voice Studio</button>
+                <button class="btn btn-secondary" onclick="openOverrideModal(${evalData.submissionId}, ${evalData.totalMarksObtained})"><i class="fa-solid fa-pen-to-square"></i> Override Marks</button>
+                <a href="/api/submissions/download-pdf-report?submissionId=${evalData.submissionId}" target="_blank" class="btn btn-outline"><i class="fa-solid fa-file-pdf" style="color:#f43f5e;"></i> Download Official PDF</a>
+                <button class="btn btn-secondary" onclick="openEmailModal(${evalData.submissionId})"><i class="fa-solid fa-paper-plane" style="color:#38bdf8;"></i> Email Parent/Student</button>
             </div>
         </div>
     `;
